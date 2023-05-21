@@ -1,12 +1,11 @@
 {
   "dependencies": {
+    "express": "^4.18.2",
     "static-server": "^2.2.1",
     "ws": "^6.1.3",
     "wscat": "^2.2.1"
   },
   "scripts": {
-    "server": "node index.js",
-    "client": "$(yarn bin)/static-server client/",
-    "client-npm": "$(npm bin)/static-server client/"
+    "start": "node index.js"
   }
 }

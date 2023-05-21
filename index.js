@@ -1,6 +1,13 @@
 var WebSocketServer = require('ws').Server,
+  express = require('express'),
+  http = require('http'),
+  app = express(),
+  server = http.createServer(app);
 
-wss   = new WebSocketServer({ port: 3000 });
+app.use(express.static('public'));
+server.listen(80);
+
+var wss = new WebSocketServer({ server: server, path: '/ws' });
 users = {};
 
 function sendTo(conn, message) {
@@ -8,7 +15,7 @@ function sendTo(conn, message) {
 }
 
 wss.on('connection', function (connection) {
-  console.log("User connected");
+  console.log('User connected');
 
   connection.on('message', function (message) {
     var data;
@@ -16,7 +23,7 @@ wss.on('connection', function (connection) {
     try {
       data = JSON.parse(message);
     } catch (e) {
-      console.log("Error Parsing JSON.");
+      console.log('Error Parsing JSON.');
       data = {};
     }
 
@@ -28,14 +35,14 @@ wss.on('connection', function (connection) {
         if (users[data.name]) {
           sendTo(connection, {
             type: 'login',
-            success: false
+            success: false,
           });
         } else {
           users[data.name] = connection;
-          connection.name  = data.name;
+          connection.name = data.name;
           sendTo(connection, {
             type: 'login',
-            success: true
+            success: true,
           });
         }
         break;
@@ -50,7 +57,7 @@ wss.on('connection', function (connection) {
           sendTo(conn, {
             type: 'offer',
             offer: data.offer,
-            name: connection.name
+            name: connection.name,
           });
         }
         break;
@@ -64,7 +71,7 @@ wss.on('connection', function (connection) {
           connection.otherName = data.name;
           sendTo(conn, {
             type: 'answer',
-            answer: data.answer
+            answer: data.answer,
           });
         }
         break;
@@ -76,7 +83,7 @@ wss.on('connection', function (connection) {
         if (conn != null) {
           sendTo(conn, {
             type: 'candidate',
-            candidate: data.candidate
+            candidate: data.candidate,
           });
         }
         break;
@@ -92,7 +99,7 @@ wss.on('connection', function (connection) {
           }
 
           sendTo(conn, {
-            type: 'leave'
+            type: 'leave',
           });
         }
         break;
@@ -100,7 +107,7 @@ wss.on('connection', function (connection) {
       default:
         sendTo(connection, {
           type: 'error',
-          message: 'Unrecognized command: ' + data.type
+          message: 'Unrecognized command: ' + data.type,
         });
         break;
     }
@@ -117,7 +124,7 @@ wss.on('connection', function (connection) {
 
         if (conn != null) {
           sendTo(conn, {
-            type: 'leave'
+            type: 'leave',
           });
         }
       }
