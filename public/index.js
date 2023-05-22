@@ -1,7 +1,6 @@
 var name, connectedUser, yourConnection, stream;
 
-// var socket = new WebSocket('wss://eunnhodev.site/ws');
-var socket = new WebSocket('ws://localhost/ws');
+var socket = new WebSocket('wss://eunnhodev.site/ws');
 
 var loginPage = document.querySelector('#login-page');
 var usernameInput = document.querySelector('#username');
