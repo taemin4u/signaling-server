@@ -14,10 +14,10 @@ function sendTo(conn, message) {
   conn.send(JSON.stringify(message));
 }
 
-wss.on('connection', function (connection) {
+wss.on('connection', function (socket) {
   console.log('User connected');
 
-  connection.on('message', function (message) {
+  socket.on('message', function (message) {
     var data;
 
     try {
@@ -33,14 +33,14 @@ wss.on('connection', function (connection) {
       case 'login':
         console.log('User logged in as', data.name);
         if (users[data.name]) {
-          sendTo(connection, {
+          sendTo(socket, {
             type: 'login',
             success: false,
           });
         } else {
-          users[data.name] = connection;
-          connection.name = data.name;
-          sendTo(connection, {
+          users[data.name] = socket;
+          socket.name = data.name;
+          sendTo(socket, {
             type: 'login',
             success: true,
           });
@@ -48,27 +48,30 @@ wss.on('connection', function (connection) {
         break;
 
       // { "type": "offer", "name": "User2", "offer": "Hello, User2!" }
+      // offer가 reciever의 ID를 적어서 보냄 -> 서버는 ID를 찾음 -> Receiver에게 offer의 데이터를 전달
       case 'offer':
         console.log('sending offer to', data.name);
         var conn = users[data.name];
 
         if (conn != null) {
-          connection.otherName = data.name;
+          // socket.otherName: My Remote Peer's name
+          socket.otherName = data.name;
           sendTo(conn, {
             type: 'offer',
             offer: data.offer,
-            name: connection.name,
+            name: socket.name,
           });
         }
         break;
 
       // { "type": "answer", "name": "User1", "answer", "Hello to you too, User1!" }
+      // Receiver가 다시 Offer에게 answer을 전달
       case 'answer':
         console.log('sending answer to', data.name);
         var conn = users[data.name];
 
         if (conn != null) {
-          connection.otherName = data.name;
+          socket.otherName = data.name;
           sendTo(conn, {
             type: 'answer',
             answer: data.answer,
@@ -77,6 +80,7 @@ wss.on('connection', function (connection) {
         break;
 
       case 'candidate':
+        // 상대방에게 네트워크 정보 전달
         console.log('Sending candidate to', data.name);
         var conn = users[data.name];
 
@@ -105,7 +109,7 @@ wss.on('connection', function (connection) {
         break;
 
       default:
-        sendTo(connection, {
+        sendTo(socket, {
           type: 'error',
           message: 'Unrecognized command: ' + data.type,
         });
@@ -113,13 +117,14 @@ wss.on('connection', function (connection) {
     }
   });
 
-  connection.on('close', function () {
-    if (connection.name) {
-      delete users[connection.name];
+  socket.on('close', function () {
+    if (socket.name) {
+      delete users[socket.name];
 
-      if (connection.otherName) {
-        console.log('Disconnecting user from', connection.otherName);
-        var conn = users[connection.otherName];
+      // 상대방에게도 종료를 알려야함
+      if (socket.otherName) {
+        console.log('Disconnecting user from', socket.otherName);
+        var conn = users[socket.otherName];
         conn.otherName = null;
 
         if (conn != null) {

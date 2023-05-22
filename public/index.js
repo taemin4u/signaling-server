@@ -1,6 +1,7 @@
 var name, connectedUser, yourConnection, stream;
 
-var connection = new WebSocket('wss://eunnhodev.site/ws');
+// var socket = new WebSocket('wss://eunnhodev.site/ws');
+var socket = new WebSocket('ws://localhost/ws');
 
 var loginPage = document.querySelector('#login-page');
 var usernameInput = document.querySelector('#username');
@@ -11,6 +12,8 @@ var theirVideo = document.querySelector('#theirs');
 var theirUsernameInput = document.querySelector('#their-username');
 var callButton = document.querySelector('#call');
 var hangUpButton = document.querySelector('#hang-up');
+
+const remoteMediaStream = new MediaStream();
 
 callPage.style.display = 'none';
 
@@ -41,11 +44,11 @@ hangUpButton.addEventListener('click', function () {
   onLeave();
 });
 
-connection.onopen = function () {
+socket.onopen = function () {
   console.log('Connected');
 };
 
-connection.onmessage = function (message) {
+socket.onmessage = function (message) {
   console.log('Got message', message.data);
 
   var data = JSON.parse(message.data);
@@ -70,7 +73,7 @@ connection.onmessage = function (message) {
   }
 };
 
-connection.onerror = function (error) {
+socket.onerror = function (error) {
   console.log('Got error', error);
 };
 
@@ -129,9 +132,10 @@ function _send(message) {
     message.name = connectedUser;
   }
 
-  connection.send(JSON.stringify(message));
+  socket.send(JSON.stringify(message));
 }
 
+// Login 성공시 스트림을 얻으며 PeerConnection 구축 시작
 function _startConnection() {
   navigator.mediaDevices
     .getUserMedia({ video: true, audio: false })
@@ -159,13 +163,6 @@ function _setupPeerConnection(stream) {
   };
   yourConnection = new RTCPeerConnection(configuration);
 
-  // setup sttream listening
-  yourConnection.addTrack(stream.getTracks()[0]);
-  yourConnection.ontrack = function (event) {
-    console.log(event);
-    theirVideo.srcObject = event.streams[0];
-  };
-
   // setup ice handling
   yourConnection.onicecandidate = function (event) {
     if (event.candidate) {
@@ -175,8 +172,17 @@ function _setupPeerConnection(stream) {
       });
     }
   };
+
+  // setup sttream listening
+  yourConnection.addTrack(stream.getTracks()[0]);
+  yourConnection.ontrack = function (event) {
+    remoteMediaStream.addTrack(event.track);
+    console.log(event);
+    theirVideo.srcObject = remoteMediaStream;
+  };
 }
 
+// user = remoteUser
 function _startPeerConnection(user) {
   connectedUser = user;
 
