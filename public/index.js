@@ -162,6 +162,7 @@ function _setupPeerConnection(stream) {
   // setup sttream listening
   yourConnection.addTrack(stream.getTracks()[0]);
   yourConnection.ontrack = function (event) {
+    console.log(event);
     theirVideo.srcObject = event.streams[0];
   };
 
