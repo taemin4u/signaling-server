@@ -125,12 +125,14 @@ wss.on('connection', function (socket) {
       if (socket.otherName) {
         console.log('Disconnecting user from', socket.otherName);
         var conn = users[socket.otherName];
-
         if (conn) {
           conn.otherName = null;
-          sendTo(conn, {
-            type: 'leave',
-          });
+          if (conn.readystate === WebSocket.OPEN) {
+            sendTo(conn, {
+              type: 'leave',
+            });
+          }
+
         }
       }
     }
