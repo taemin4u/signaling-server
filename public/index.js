@@ -12,8 +12,6 @@ var theirUsernameInput = document.querySelector('#their-username');
 var callButton = document.querySelector('#call');
 var hangUpButton = document.querySelector('#hang-up');
 
-const remoteMediaStream = new MediaStream();
-
 callPage.style.display = 'none';
 
 loginButton.addEventListener('click', function (event) {
@@ -92,22 +90,20 @@ function onOffer(offer, name) {
 
   yourConnection.setRemoteDescription(new RTCSessionDescription(offer));
 
-  yourConnection.createAnswer(
-    function (answer) {
-      yourConnection.setLocalDescription(answer);
-      _send({
-        type: 'answer',
-        answer: answer,
-      });
-    },
-    function (error) {
-      alert('An error has occurred.');
-    }
-  );
+  yourConnection.createAnswer().then((answer) => {
+    yourConnection.setLocalDescription(answer);
+    _send({
+      type: 'answer',
+      answer: answer,
+    });
+  }).catch(
+    (error) => {
+    alert('An error has occurred.');
+  });
 }
 
-function onAnswer(answer) {
-  yourConnection.setRemoteDescription(new RTCSessionDescription(answer));
+async function onAnswer(answer) {
+  await yourConnection.setRemoteDescription(new RTCSessionDescription(answer));
 }
 
 function onCandidate(candidate) {
@@ -121,7 +117,7 @@ function onLeave() {
   yourConnection.close();
 
   yourConnection.onicecandidate = null;
-  yourConnection.onaddstream = null;
+  yourConnection.ontrack = null
 
   _setupPeerConnection(stream);
 }
@@ -174,9 +170,10 @@ function _setupPeerConnection(stream) {
 
   // setup sttream listening
   yourConnection.addTrack(stream.getTracks()[0]);
+  // 상대 Peer가 addTrack을 하고 SDP와 ice가 넘어오면 그때 ontrack이 호출된다.
   yourConnection.ontrack = function (event) {
+    const remoteMediaStream = new MediaStream();
     remoteMediaStream.addTrack(event.track);
-    console.log(event);
     theirVideo.srcObject = remoteMediaStream;
   };
 }
@@ -185,17 +182,14 @@ function _setupPeerConnection(stream) {
 function _startPeerConnection(user) {
   connectedUser = user;
 
-  yourConnection.createOffer(
-    function (offer) {
-      _send({
-        type: 'offer',
-        offer: offer,
-      });
-
-      yourConnection.setLocalDescription(offer);
-    },
-    function (error) {
-      alert('An error hsa occurred.');
-    }
-  );
+  yourConnection.createOffer().then(offer => {
+    _send({
+      type: 'offer',
+      offer: offer
+    });
+    console.log('sending offer to Remote,', offer)
+    yourConnection.setLocalDescription(offer)
+  }).catch(error => {
+    alert('An error has ocurred', error)
+  })
 }
