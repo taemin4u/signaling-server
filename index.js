@@ -5,7 +5,7 @@ var WebSocketServer = require('ws').Server,
   server = http.createServer(app);
 
 app.use(express.static('public'));
-server.listen(80);
+server.listen(8123);
 
 var wss = new WebSocketServer({ server: server, path: '/ws' });
 users = {};
@@ -125,9 +125,9 @@ wss.on('connection', function (socket) {
       if (socket.otherName) {
         console.log('Disconnecting user from', socket.otherName);
         var conn = users[socket.otherName];
-        conn.otherName = null;
 
-        if (conn != null) {
+        if (conn) {
+          conn.otherName = null;
           sendTo(conn, {
             type: 'leave',
           });
