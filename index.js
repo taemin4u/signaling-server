@@ -127,7 +127,7 @@ wss.on('connection', function (socket) {
         var conn = users[socket.otherName];
         if (conn) {
           conn.otherName = null;
-          if (conn.readystate === WebSocket.OPEN) {
+          if (conn.readystate === socket.OPEN) {
             sendTo(conn, {
               type: 'leave',
             });
